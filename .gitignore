@@ -1,0 +1,20 @@
+# Large video & model files — too big for GitHub
+*.mp4
+*.pt
+*.avi
+*.mkv
+
+# macOS junk
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Jupyter notebook (too large)
+*.ipynb
+
+# Runs folder
+runs/
