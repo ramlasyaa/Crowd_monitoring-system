@@ -4,6 +4,9 @@
 *.avi
 *.mkv
 
+# EXCEPTION: Allow only the small H.264 video (13MB) for cloud playback
+!crowd_robot/output_video_h264.mp4
+
 # macOS junk
 .DS_Store
 
