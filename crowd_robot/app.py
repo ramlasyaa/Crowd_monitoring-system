@@ -9,6 +9,12 @@ import time
 from datetime import datetime, timedelta
 
 # ============================================================
+# BASE DIRECTORY — always points to crowd_robot/ folder
+# regardless of where `streamlit run` is called from
+# ============================================================
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ============================================================
 # PAGE CONFIGURATION
 # ============================================================
 st.set_page_config(
@@ -415,19 +421,23 @@ def load_metrics(file_obj=None):
     if file_obj is not None:
         df = pd.read_csv(file_obj)
     else:
-        # Try loading the project's actual CSV
+        # Always prefer crowd_metrics.csv next to this app.py file (crowd_robot folder)
+        # APP_DIR is set at the top of the file using __file__
         possible_paths = [
-            "crowd_metrics.csv",
-            "/Users/ramlasya/Documents/Crowd_monitoring_robot/crowd_robot/crowd_metrics.csv",
-            "../crowd_metrics.csv"
+            os.path.join(APP_DIR, "crowd_metrics.csv"),           # ✅ crowd_robot/crowd_metrics.csv
+            os.path.join(APP_DIR, "..", "crowd_metrics.csv"),     # fallback: root folder
         ]
         df = None
         for p in possible_paths:
+            p = os.path.normpath(p)
             if os.path.exists(p):
-                df = pd.read_csv(p)
-                break
+                candidate = pd.read_csv(p)
+                # Only accept if it has enough rows (>50) to be the real data
+                if len(candidate) > 50 and 'Total Detected' in candidate.columns:
+                    df = candidate
+                    break
         if df is None:
-            # fallback synthetic data shaped like real data
+            # Fallback synthetic data shaped like real project data
             frames = np.arange(3, 843, 3)
             n = len(frames)
             base = np.clip(np.random.normal(13, 4, n), 0, 25).astype(int)
@@ -722,7 +732,7 @@ with tab_analytics:
         fig3, ax3 = plt.subplots(figsize=(6.5, 3.5))
         fig3 = apply_dark_style(fig3, [ax3])
 
-        cmap = plt.cm.get_cmap('RdYlGn_r')
+        cmap = plt.colormaps.get_cmap('RdYlGn_r')
         im = ax3.imshow(heatmap_data, aspect='auto', cmap=cmap, interpolation='bilinear')
 
         ax3.set_xticks([])
@@ -842,12 +852,9 @@ with tab_video:
     with vc1:
         st.markdown("<p style='font-size:0.78rem; color:#64748b; text-transform:uppercase; letter-spacing:0.08em; font-weight:600; margin-bottom:12px;'>🎬 AI Detection Output</p>", unsafe_allow_html=True)
         video_paths = [
-            "/Users/ramlasya/Documents/Crowd_monitoring_robot/crowd_robot/output_video_h264.mp4",
-            "/Users/ramlasya/Documents/Crowd_monitoring_robot/crowd_robot/output_video.mp4",
-            "/Users/ramlasya/Documents/Crowd_monitoring_robot/crowd_robot/output_video_with_audio.mp4",
-            "output_video_h264.mp4",
-            "output_video.mp4",
-            "output_video_with_audio.mp4"
+            os.path.join(APP_DIR, "output_video_h264.mp4"),
+            os.path.join(APP_DIR, "output_video.mp4"),
+            os.path.join(APP_DIR, "output_video_with_audio.mp4"),
         ]
         video_shown = False
         for vp in video_paths:
@@ -861,8 +868,8 @@ with tab_video:
     with vc2:
         st.markdown("<p style='font-size:0.78rem; color:#64748b; text-transform:uppercase; letter-spacing:0.08em; font-weight:600; margin-bottom:12px;'>🔥 Crowd Heatmap</p>", unsafe_allow_html=True)
         heatmap_paths = [
-            "/Users/ramlasya/Documents/Crowd_monitoring_robot/crowd_robot/heatmap_result.png",
-            "heatmap_result.png"
+            os.path.join(APP_DIR, "heatmap_result.png"),
+            os.path.join(APP_DIR, "temp.jpg"),
         ]
         heatmap_shown = False
         for hp in heatmap_paths:
@@ -884,7 +891,7 @@ with tab_video:
     </div>
     """, unsafe_allow_html=True)
 
-    incident_dir = "/Users/ramlasya/Documents/Crowd_monitoring_robot/crowd_robot/security_incidents"
+    incident_dir = os.path.join(APP_DIR, "security_incidents")
     if os.path.exists(incident_dir):
         incident_images = sorted([
             f for f in os.listdir(incident_dir)
