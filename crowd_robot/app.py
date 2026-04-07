@@ -722,12 +722,22 @@ with tab_analytics:
         """, unsafe_allow_html=True)
 
         n_bins = 20
-        frame_bins = np.array_split(df, n_bins)
-        alert_counts = [g['Dynamic Alert'].sum() for g in frame_bins]
-        avg_crowding  = [g['Total Detected'].mean() for g in frame_bins]
-        bin_labels    = [f"F{int(g['Frame Number'].iloc[0])}" for g in frame_bins]
+        frame_bins = [g for g in np.array_split(df, n_bins) if not g.empty]
+        alert_counts = [int(g['Dynamic Alert'].sum()) if 'Dynamic Alert' in g.columns else 0
+                        for g in frame_bins]
+        avg_crowding  = [float(g['Total Detected'].mean()) if 'Total Detected' in g.columns else 0.0
+                         for g in frame_bins]
+        bin_labels    = [f"F{int(g['Frame Number'].iloc[0])}" if 'Frame Number' in g.columns else ''
+                         for g in frame_bins]
 
-        heatmap_data = np.array([alert_counts]).reshape(4, 5)
+        # Pad to exactly 20 values so reshape(4,5) is always safe
+        while len(alert_counts) < 20:
+            alert_counts.append(0)
+        alert_counts = alert_counts[:20]
+        try:
+            heatmap_data = np.array(alert_counts, dtype=float).reshape(4, 5)
+        except Exception:
+            heatmap_data = np.zeros((4, 5))
 
         fig3, ax3 = plt.subplots(figsize=(6.5, 3.5))
         fig3 = apply_dark_style(fig3, [ax3])
