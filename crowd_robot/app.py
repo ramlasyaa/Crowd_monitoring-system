@@ -420,14 +420,16 @@ with tab_analytics:
 
         try:
             N_BINS = 20
-            # Split into at most N_BINS non-empty groups
-            splits = [g for g in np.array_split(df, N_BINS) if not g.empty]
+            n_rows = len(df)
+            # Use pure pandas iloc-based splitting – always returns DataFrames (not ndarrays)
+            indices = np.array_split(np.arange(n_rows), N_BINS)
             alert_counts_bins = []
-            for g in splits:
-                if "Dynamic Alert" in g.columns and len(g) > 0:
-                    alert_counts_bins.append(int(g["Dynamic Alert"].sum()))
-                else:
+            for idx in indices:
+                if len(idx) == 0:
                     alert_counts_bins.append(0)
+                    continue
+                chunk = df.iloc[idx]
+                alert_counts_bins.append(int(chunk["Dynamic Alert"].sum()) if "Dynamic Alert" in chunk.columns else 0)
             # Pad / trim to exactly 20
             while len(alert_counts_bins) < 20:
                 alert_counts_bins.append(0)
